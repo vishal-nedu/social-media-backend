@@ -1,5 +1,7 @@
 package com.example.social_media_backend;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +15,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -38,6 +41,8 @@ public class MediaService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private discoveryrepo discoveryrepo;
+    @Autowired
+    private Cloudinary cloudinary;
     public List<category> getcategory()
     {
         return categoryRepo.findAll();
@@ -282,19 +287,32 @@ public class MediaService {
 
     public users upload(MultipartFile file, int id) throws IOException {
         users u1=userrepo.findById(id);
-        String fileName = file.getOriginalFilename();
-        Path uploadDir = Paths.get(
-                "uploads/profile/"
-        );
-        if(!Files.exists(uploadDir))
+        if(u1==null)
         {
-            Files.createDirectories(uploadDir);
+            throw  new RuntimeException("user not found");
         }
-        Path path=uploadDir.resolve(file.getOriginalFilename());
+        if (file.isEmpty()) {
+            throw new RuntimeException("File not selected");
+        }
+//        String fileName = file.getOriginalFilename();
+//        Path uploadDir = Paths.get(
+//                "uploads/profile/"
+//        );
+//        if(!Files.exists(uploadDir))
+//        {
+//            Files.createDirectories(uploadDir);
+//        }
+//        Path path=uploadDir.resolve(file.getOriginalFilename());
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                ObjectUtils.asMap(
+                        "resource_type", "image"
+                ));
 
-        Files.write(path, file.getBytes());
-        u1.setProfile_photo(fileName);
-        System.out.println(fileName);
+        String imageUrl = uploadResult.get("secure_url").toString();
+
+//        Files.write(path, file.getBytes());
+        u1.setProfile_photo(imageUrl);
+       // System.out.println(fileName);
         userrepo.save(u1);
         return u1;
     }
@@ -306,23 +324,30 @@ public class MediaService {
         {
             throw new RuntimeException("Video not selected");
         }
-        String fileName = file.getOriginalFilename();
+//        String fileName = file.getOriginalFilename();
+//
+//        Path uploadDir = Paths.get(
+//                "uploads/videos/"
+//        );
+//        if(!Files.exists(uploadDir))
+//        {
+//            Files.createDirectories(uploadDir);
+//        }
+//        Path path=uploadDir.resolve(fileName);
+//
+//        Files.write(path, file.getBytes());
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                ObjectUtils.asMap(
+                        "resource_type", "video"
+                ));
 
-        Path uploadDir = Paths.get(
-                "uploads/videos/"
-        );
-        if(!Files.exists(uploadDir))
-        {
-            Files.createDirectories(uploadDir);
-        }
-        Path path=uploadDir.resolve(fileName);
+        String videoUrl = uploadResult.get("secure_url").toString();
 
-        Files.write(path, file.getBytes());
         videos v1=new videos();
         v1.setUserId(id);
         v1.setCategoryId(categoryid);
         v1.setVideo_name(title);
-        v1.setVideo_path(fileName);
+        v1.setVideo_path(videoUrl);
         v1.setDescription(description);
         v1.setDate_posted(LocalDate.now());
        return  videorepo.save(v1);
