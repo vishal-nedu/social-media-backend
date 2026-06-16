@@ -1,10 +1,12 @@
-services:
-  - type: web
-    name: sparknest-backend
+FROM eclipse-temurin:18-jdk
 
-    env: java
+WORKDIR /app
 
-    buildCommand: ./mvnw clean package -DskipTests
+COPY . .
 
+RUN chmod +x ./mvnw || true
+RUN ./mvnw clean package -DskipTests || mvn clean package -DskipTests
 
-    startCommand: java -jar target/*.jar
+EXPOSE 8080
+
+CMD ["sh","-c","java -jar target/*.jar"]
