@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: sparknest-backend
+
+    env: java
+
+    buildCommand: ./mvnw clean package -DskipTests
+
+
+    startCommand: java -jar target/*.jar
